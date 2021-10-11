@@ -1,12 +1,19 @@
-FROM zabbix/zabbix-server-mysql:centos-trunk
+FROM zabbix/zabbix-server-mysql:ubuntu-trunk
 
 USER root
 
-RUN curl https://packages.microsoft.com/config/rhel/8/prod.repo > /etc/yum.repos.d/mssql-release.repo && \
-    ACCEPT_EULA=Y yum -y install libaio libnsl.x86_64 msodbcsql17 && \
-    rpm -ivh https://download.oracle.com/otn_software/linux/instantclient/19800/oracle-instantclient19.8-basic-19.8.0.0.0-1.x86_64.rpm && \
-    rpm -ivh https://download.oracle.com/otn_software/linux/instantclient/19800/oracle-instantclient19.8-odbc-19.8.0.0.0-1.x86_64.rpm && \
-    sed -i 's,^\(MinProtocol[ ]*=\).*,\1'TLSv1.0',g' /etc/crypto-policies/back-ends/opensslcnf.config && \
-    sed -i 's,^\(CipherString[ ]*=\).*,\1'DEFAULT@SECLEVEL=1',g' /etc/crypto-policies/back-ends/opensslcnf.config
+RUN apt update && apt install -y curl gnupg libaio-dev unzip && \
+  curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+  curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+  apt update && \
+  ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+  wget https://download.oracle.com/otn_software/linux/instantclient/1912000/instantclient-basic-linux.x64-19.12.0.0.0dbru.zip && \
+  wget https://download.oracle.com/otn_software/linux/instantclient/1912000/instantclient-odbc-linux.x64-19.12.0.0.0dbru.zip && \
+  unzip instantclient-basic-linux.x64-19.12.0.0.0dbru.zip -d /opt/oracle/ && \
+  unzip instantclient-odbc-linux.x64-19.12.0.0.0dbru.zip -d /opt/oracle/ && \
+  rm -rf instantclient-*.zip
 
 USER 1997
+
+ENV PATH="${PATH}:/opt/oracle/instantclient_19_12"
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/oracle/instantclient_19_12"
